@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ファイル送信(管理者用)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="card" id="loginCard">
+  <h1>管理者ログイン</h1>
+  <p class="subtitle">Apps Scriptのスクリプトプロパティに設定したパスワードを入力してください</p>
+  <label for="adminPw">パスワード</label>
+  <input type="password" id="adminPw">
+  <button id="loginBtn">ログイン</button>
+  <div id="loginMsg"></div>
+</div>
+
+<div class="card" id="uploadCard" style="display:none;">
+  <h1>ファイルを送る</h1>
+  <p class="subtitle">アップロードすると、リンク+ログインIDが即メール送信されます。パスワードは1分後に自動で別送されます。</p>
+
+  <label for="file">送信するファイル</label>
+  <input type="file" id="file">
+
+  <label for="recipientEmail">受信者のメールアドレス</label>
+  <input type="email" id="recipientEmail">
+
+  <label for="maxDownloads">ダウンロード可能回数</label>
+  <input type="number" id="maxDownloads" value="1" min="1">
+
+  <label for="expiresInHours">有効期限</label>
+  <select id="expiresInHours">
+    <option value="1">1時間</option>
+    <option value="24" selected>24時間</option>
+    <option value="72">3日間</option>
+    <option value="168">7日間</option>
+    <option value="720">30日間</option>
+  </select>
+
+  <label for="emailTemplate">送信するメール本文(編集可・{{LINK}} {{LOGIN_ID}} は自動で置き換わります)</label>
+  <textarea id="emailTemplate" rows="10"></textarea>
+
+  <button id="uploadBtn">アップロードして送信</button>
+  <div id="uploadMsg"></div>
+
+  <div id="resultBox" style="display:none;">
+    <label>共有リンク(参考)</label>
+    <div class="link-box">
+      <input type="text" id="shareLink" readonly onclick="this.select()">
+    </div>
+  </div>
+</div>
+
+<div class="card" id="pendingCard" style="display:none;">
+  <h1>送信待ち一覧</h1>
+  <p class="subtitle">パスワード未送信の1分以内ならキャンセル可能です</p>
+  <div id="pendingList"><div class="empty">読み込み中...</div></div>
+  <button id="refreshPendingBtn" type="button">更新</button>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

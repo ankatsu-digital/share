@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ファイルの受け取り</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="card" id="mainCard">
+  <h1>ファイルの受け取り</h1>
+  <div id="loadingMsg" class="subtitle">読み込み中...</div>
+
+  <div id="content" style="display:none;">
+    <p class="subtitle">ログインIDを確認してください。パスワードは自動でメールに届きます。</p>
+
+    <div class="login-id-box">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">ログインID</div>
+      <div class="value" id="loginIdDisplay">----</div>
+    </div>
+    <div class="timer" id="statusText"></div>
+
+    <label for="inputLoginId">ログインID</label>
+    <input type="text" id="inputLoginId">
+
+    <label for="inputPassword">パスワード(メールで届きます)</label>
+    <input type="password" id="inputPassword">
+
+    <button id="verifyBtn">確認する</button>
+    <div id="mainMsg"></div>
+    <div id="downloadArea"></div>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/share.js"></script>
+</body>
+</html>
