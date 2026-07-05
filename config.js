@@ -1,5 +1,5 @@
 // Apps ScriptをデプロイしてできたウェブアプリのURL(末尾は /exec)に書き換えてください
-const GAS_URL = 'https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXX/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzS8KGk7sRxoKniAyXim71Wl7wRCIIfeJ450WGk41oRrtFeLohDeZ8H_AzKmWofL1v1Jg/exec';
 
 // Apps Script側に呼び出す共通関数
 async function callApi(action, params) {
