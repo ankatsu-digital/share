@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>受け渡し票 発行 | ファイル送信管理</title>
+<title>ファイル送信(管理者用)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="style.css">
 </head>
@@ -45,7 +45,7 @@
   </select>
 
   <label for="emailTemplate">送信するメール本文(編集可・{{LINK}} {{LOGIN_ID}} は自動で置き換わります)</label>
-  <textarea id="emailTemplate" rows="10"></textarea>
+  <textarea id="emailTemplate" rows="8"></textarea>
 
   <button id="uploadBtn">アップロードして送信</button>
   <div id="uploadMsg"></div>
@@ -58,15 +58,24 @@
   </div>
 </div>
 
+<div class="card" id="mailSettingsCard" style="display:none;">
+  <div class="section-title">送信設定</div>
+  <p class="subtitle">相手が「返信」を押したときに届かせたいアドレスを設定できます(空欄なら自分のアドレスのまま)</p>
+  <label for="replyToInput">返信先メールアドレス</label>
+  <input type="email" id="replyToInput" placeholder="例: contact@example.com">
+  <button id="saveMailSettingsBtn">保存</button>
+  <div id="mailSettingsMsg"></div>
+</div>
+
 <div class="card" id="pendingCard" style="display:none;">
-  <div class="section-toggle">送信待ち一覧</div>
+  <div class="section-title">送信待ち一覧</div>
   <p class="subtitle">パスワード未送信の1分以内ならキャンセル可能です</p>
   <div id="pendingList"><div class="empty">読み込み中...</div></div>
   <button class="secondary" id="refreshPendingBtn" type="button">更新</button>
 </div>
 
 <div class="card" id="historyCard" style="display:none;">
-  <div class="section-toggle">送信履歴</div>
+  <div class="section-title">送信履歴</div>
   <p class="subtitle">過去に発行したリンクの状態確認・無効化ができます</p>
   <div id="historyList"><div class="empty">読み込み中...</div></div>
   <button class="secondary" id="refreshHistoryBtn" type="button">更新</button>
