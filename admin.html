@@ -4,7 +4,104 @@
 <meta charset="UTF-8">
 <title>ファイル送信(管理者用)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="style.css">
+<style>
+:root {
+  --ink: #1c2b3a;
+  --paper: #f0f2f5;
+  --panel: #ffffff;
+  --line: #dbe0e6;
+  --muted: #6b7688;
+  --accent: #8a3324;
+  --accent-dark: #6e2818;
+  --success: #2f6b4f;
+  --error: #a3372a;
+  --info: #2c4a6e;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; width: 100%; }
+body {
+  font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Segoe UI", sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 32px 16px;
+  line-height: 1.6;
+}
+.wrap { width: 100%; max-width: 480px; margin: 0 auto; }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 28px 24px;
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(28,43,58,0.05);
+  margin-bottom: 20px;
+}
+h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+.eyebrow {
+  display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--accent); text-transform: uppercase; margin-bottom: 6px;
+}
+.subtitle { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+label { display: block; font-size: 13px; font-weight: 600; margin: 16px 0 6px; }
+input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+input[type="file"], select, textarea {
+  display: block; width: 100%; max-width: 100%; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 14px;
+  background: #fff; font-family: inherit; color: var(--ink);
+}
+textarea { resize: vertical; }
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138,51,36,0.12);
+}
+button {
+  display: block; margin-top: 20px; width: 100%; padding: 11px;
+  background: var(--accent); color: #fff; border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+button:hover { background: var(--accent-dark); }
+button:disabled { background: #b8bfc8; cursor: not-allowed; }
+button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+button.secondary:hover { background: var(--paper); }
+.msg { margin-top: 14px; font-size: 13px; padding: 10px 12px; border-radius: 6px; }
+.msg.error { background: #fbf0ee; color: var(--error); }
+.msg.success { background: #eef5f0; color: var(--success); }
+.msg.info { background: #eef2f6; color: var(--info); }
+.field-hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.link-box { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.link-box input { flex: 1; min-width: 0; font-size: 12px; }
+.link-box button { width: auto; margin-top: 0; padding: 10px 14px; flex-shrink: 0; }
+.list-item {
+  border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
+  margin-bottom: 10px; font-size: 13px;
+}
+.list-item .meta { color: var(--muted); line-height: 1.6; word-break: break-word; }
+.list-item .meta strong { color: var(--ink); }
+.status-badge {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px;
+  border-radius: 4px; margin-left: 4px; white-space: nowrap;
+}
+.status-badge.active { background: #eef5f0; color: var(--success); }
+.status-badge.muted { background: #eceff2; color: var(--muted); }
+.list-item .actions { margin-top: 10px; }
+.list-item button { margin-top: 0; width: auto; padding: 7px 14px; font-size: 12px; background: var(--error); }
+.empty { color: #9aa3af; font-size: 13px; }
+.section-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+
+/* タブ */
+.tab-bar {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
+  border-bottom: 1px solid var(--line); padding-bottom: 0;
+}
+.tab-btn {
+  margin-top: 0; width: auto; padding: 9px 14px; font-size: 13px; font-weight: 700;
+  background: transparent; color: var(--muted); border: none; border-radius: 6px 6px 0 0;
+  border-bottom: 2px solid transparent; cursor: pointer;
+}
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-btn:hover { background: var(--paper); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -18,69 +115,79 @@
   <div id="loginMsg"></div>
 </div>
 
-<div class="card" id="uploadCard" style="display:none;">
-  <h1><span class="eyebrow">New Handover</span>ファイルを送る</h1>
-  <p class="subtitle">アップロードすると、リンク+ログインIDが即メール送信されます。パスワードは1分後に自動で別送されます。</p>
+<div id="mainArea" style="display:none;">
 
-  <label for="file">送信するファイル</label>
-  <input type="file" id="file">
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="upload">新規送信</button>
+    <button class="tab-btn" data-tab="mail">送信設定</button>
+    <button class="tab-btn" data-tab="pending">送信待ち</button>
+    <button class="tab-btn" data-tab="history">履歴</button>
+  </div>
 
-  <label for="recipientEmail">受信者のメールアドレス</label>
-  <input type="email" id="recipientEmail">
+  <div class="card tab-panel active" id="tab-upload">
+    <h1><span class="eyebrow">New Handover</span>ファイルを送る</h1>
+    <p class="subtitle">アップロードすると、リンク+ログインIDが即メール送信されます。パスワードは1分後に自動で別送されます。</p>
 
-  <label for="customId">リンクID(任意・空欄なら自動生成)</label>
-  <input type="text" id="customId" placeholder="例: yamada-0705">
-  <div class="field-hint">半角英数字・ハイフン・アンダースコアのみ、3〜64文字</div>
+    <label for="file">送信するファイル</label>
+    <input type="file" id="file">
 
-  <label for="maxDownloads">ダウンロード可能回数</label>
-  <input type="number" id="maxDownloads" value="1" min="1">
+    <label for="recipientEmail">受信者のメールアドレス</label>
+    <input type="email" id="recipientEmail">
 
-  <label for="expiresInHours">有効期限</label>
-  <select id="expiresInHours">
-    <option value="1">1時間</option>
-    <option value="24" selected>24時間</option>
-    <option value="72">3日間</option>
-    <option value="168">7日間</option>
-    <option value="720">30日間</option>
-  </select>
+    <label for="customId">リンクID(任意・空欄なら自動生成)</label>
+    <input type="text" id="customId" placeholder="例: yamada-0705">
+    <div class="field-hint">半角英数字・ハイフン・アンダースコアのみ、3〜64文字</div>
 
-  <label for="emailTemplate">送信するメール本文(編集可・{{LINK}} {{LOGIN_ID}} は自動で置き換わります)</label>
-  <textarea id="emailTemplate" rows="8"></textarea>
+    <label for="maxDownloads">ダウンロード可能回数</label>
+    <input type="number" id="maxDownloads" value="1" min="1">
 
-  <button id="uploadBtn">アップロードして送信</button>
-  <div id="uploadMsg"></div>
+    <label for="expiresInHours">有効期限</label>
+    <select id="expiresInHours">
+      <option value="1">1時間</option>
+      <option value="24" selected>24時間</option>
+      <option value="72">3日間</option>
+      <option value="168">7日間</option>
+      <option value="720">30日間</option>
+    </select>
 
-  <div id="resultBox" style="display:none;">
-    <label>共有リンク(参考)</label>
-    <div class="link-box">
-      <input type="text" id="shareLink" readonly onclick="this.select()">
+    <label for="emailTemplate">送信するメール本文(編集可・{{LINK}} {{LOGIN_ID}} は自動で置き換わります)</label>
+    <textarea id="emailTemplate" rows="8"></textarea>
+
+    <button id="uploadBtn">アップロードして送信</button>
+    <div id="uploadMsg"></div>
+
+    <div id="resultBox" style="display:none;">
+      <label>共有リンク(参考)</label>
+      <div class="link-box">
+        <input type="text" id="shareLink" readonly onclick="this.select()">
+      </div>
     </div>
   </div>
-</div>
 
-<div class="card" id="mailSettingsCard" style="display:none;">
-  <div class="section-title">送信設定</div>
-  <p class="subtitle">相手が「返信」を押したときに届かせたいアドレスを設定できます(空欄なら自分のアドレスのまま)</p>
-  <label for="replyToInput">返信先メールアドレス</label>
-  <input type="email" id="replyToInput" placeholder="例: contact@example.com">
-  <button id="saveMailSettingsBtn">保存</button>
-  <div id="mailSettingsMsg"></div>
-</div>
+  <div class="card tab-panel" id="tab-mail">
+    <div class="section-title">送信設定</div>
+    <p class="subtitle">相手が「返信」を押したときに届かせたいアドレスを設定できます(空欄なら自分のアドレスのまま)</p>
+    <label for="replyToInput">返信先メールアドレス</label>
+    <input type="email" id="replyToInput" placeholder="例: contact@example.com">
+    <button id="saveMailSettingsBtn">保存</button>
+    <div id="mailSettingsMsg"></div>
+  </div>
 
-<div class="card" id="pendingCard" style="display:none;">
-  <div class="section-title">送信待ち一覧</div>
-  <p class="subtitle">パスワード未送信の1分以内ならキャンセル可能です</p>
-  <div id="pendingList"><div class="empty">読み込み中...</div></div>
-  <button class="secondary" id="refreshPendingBtn" type="button">更新</button>
-</div>
+  <div class="card tab-panel" id="tab-pending">
+    <div class="section-title">送信待ち一覧</div>
+    <p class="subtitle">パスワード未送信の1分以内ならキャンセル可能です</p>
+    <div id="pendingList"><div class="empty">読み込み中...</div></div>
+    <button class="secondary" id="refreshPendingBtn" type="button">更新</button>
+  </div>
 
-<div class="card" id="historyCard" style="display:none;">
-  <div class="section-title">送信履歴</div>
-  <p class="subtitle">過去に発行したリンクの状態確認・無効化ができます</p>
-  <div id="historyList"><div class="empty">読み込み中...</div></div>
-  <button class="secondary" id="refreshHistoryBtn" type="button">更新</button>
-</div>
+  <div class="card tab-panel" id="tab-history">
+    <div class="section-title">送信履歴</div>
+    <p class="subtitle">過去に発行したリンクの状態確認・無効化ができます</p>
+    <div id="historyList"><div class="empty">読み込み中...</div></div>
+    <button class="secondary" id="refreshHistoryBtn" type="button">更新</button>
+  </div>
 
+</div>
 </div>
 
 <script src="config.js"></script>
