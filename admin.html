@@ -87,6 +87,14 @@ button.secondary:hover { background: var(--paper); }
 .empty { color: #9aa3af; font-size: 13px; }
 .section-title { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
 
+/* チェックボックス行 */
+.check-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 16px;
+  padding: 10px 12px; background: var(--paper); border-radius: 6px;
+}
+.check-row input[type="checkbox"] { width: auto; margin: 0; }
+.check-row label { margin: 0; font-size: 13px; font-weight: 600; }
+
 /* タブ */
 .tab-bar {
   display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
@@ -128,15 +136,23 @@ button.secondary:hover { background: var(--paper); }
     <h1><span class="eyebrow">New Handover</span>ファイルを送る</h1>
     <p class="subtitle">アップロードすると、リンク+ログインIDが即メール送信されます。パスワードは1分後に自動で別送されます。</p>
 
-    <label for="file">送信するファイル</label>
-    <input type="file" id="file">
+    <label for="file">送信するファイル(複数選択可)</label>
+    <input type="file" id="file" multiple>
+    <div class="field-hint">複数選んだ場合、ZIPにはまとめず個別に保存します。相手はそれぞれのファイルを個別に、またはまとめてダウンロードできます</div>
 
     <label for="recipientEmail">受信者のメールアドレス</label>
     <input type="email" id="recipientEmail">
 
+    <label for="senderName">送信者名(相手の画面に表示されます・任意)</label>
+    <input type="text" id="senderName" placeholder="例: 山田太郎">
+
     <label for="customId">リンクID(任意・空欄なら自動生成)</label>
     <input type="text" id="customId" placeholder="例: yamada-0705">
     <div class="field-hint">半角英数字・ハイフン・アンダースコアのみ、3〜64文字</div>
+
+    <label for="customPassword">ログインパスワード(任意・空欄なら自動生成)</label>
+    <input type="text" id="customPassword" placeholder="空欄で自動生成">
+    <div class="field-hint">空白を含まない4〜64文字。指定しない場合はランダムなパスワードが自動生成され、1分後にメールで送られます</div>
 
     <label for="maxDownloads">ダウンロード可能回数</label>
     <input type="number" id="maxDownloads" value="1" min="1">
@@ -150,8 +166,16 @@ button.secondary:hover { background: var(--paper); }
       <option value="720">30日間</option>
     </select>
 
+    <label for="emailSubject">メール件名</label>
+    <input type="text" id="emailSubject" placeholder="ファイル受け取りのご案内">
+
     <label for="emailTemplate">送信するメール本文(編集可・{{LINK}} {{LOGIN_ID}} は自動で置き換わります)</label>
     <textarea id="emailTemplate" rows="8"></textarea>
+
+    <div class="check-row" id="aliasRow" style="display:none;">
+      <input type="checkbox" id="useAlias">
+      <label for="useAlias">設定済みの送信専用アドレス(エイリアス)から送信する</label>
+    </div>
 
     <button id="uploadBtn">アップロードして送信</button>
     <div id="uploadMsg"></div>
