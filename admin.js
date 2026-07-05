@@ -14,9 +14,11 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       adminPassword = pw;
       document.getElementById('loginCard').style.display = 'none';
       document.getElementById('uploadCard').style.display = 'block';
+      document.getElementById('mailSettingsCard').style.display = 'block';
       document.getElementById('pendingCard').style.display = 'block';
       document.getElementById('historyCard').style.display = 'block';
       loadDefaultTemplate();
+      loadMailSettings();
       refreshPending();
       refreshHistory();
     } else {
@@ -33,6 +35,30 @@ async function loadDefaultTemplate() {
   const res = await callApi('getDefaultTemplate', { password: adminPassword });
   if (res.ok) document.getElementById('emailTemplate').value = res.template;
 }
+
+async function loadMailSettings() {
+  const res = await callApi('getMailSettings', { password: adminPassword });
+  if (res.ok) document.getElementById('replyToInput').value = res.replyTo || '';
+}
+
+document.getElementById('saveMailSettingsBtn').addEventListener('click', async () => {
+  const replyTo = document.getElementById('replyToInput').value.trim();
+  const msg = document.getElementById('mailSettingsMsg');
+  const btn = document.getElementById('saveMailSettingsBtn');
+  btn.disabled = true;
+  try {
+    const res = await callApi('setMailSettings', { password: adminPassword, replyTo });
+    if (res.ok) {
+      showMsg(msg, '保存しました', 'success');
+    } else {
+      showMsg(msg, res.message || '保存に失敗しました', 'error');
+    }
+  } catch (e) {
+    showMsg(msg, '通信エラー: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 document.getElementById('uploadBtn').addEventListener('click', () => {
   const fileInput = document.getElementById('file');
@@ -89,11 +115,11 @@ async function refreshPending() {
     list.innerHTML = '';
     res.list.forEach((item) => {
       const div = document.createElement('div');
-      div.className = 'pending-item';
+      div.className = 'list-item';
       const sendTime = new Date(item.scheduledSendAt);
       div.innerHTML = `
-        <div class="meta">${item.recipientEmail} / ${item.fileName}<br>送信予定: ${sendTime.toLocaleTimeString('ja-JP')}</div>
-        <button data-id="${item.id}">キャンセル</button>`;
+        <div class="meta"><strong>${item.recipientEmail}</strong><br>${item.fileName}<br>送信予定: ${sendTime.toLocaleTimeString('ja-JP')}</div>
+        <div class="actions"><button data-id="${item.id}">キャンセル</button></div>`;
       div.querySelector('button').addEventListener('click', async (ev) => {
         ev.target.disabled = true;
         const r = await callApi('cancelPendingSend', { id: item.id, password: adminPassword });
@@ -111,10 +137,10 @@ document.getElementById('refreshPendingBtn').addEventListener('click', refreshPe
 
 const STATUS_CLASS = {
   '有効': 'active',
-  '無効化済み': 'disabled',
-  'キャンセル済み': 'cancelled',
-  '期限切れ': 'expired',
-  'ダウンロード上限到達': 'expired'
+  '無効化済み': 'muted',
+  'キャンセル済み': 'muted',
+  '期限切れ': 'muted',
+  'ダウンロード上限到達': 'muted'
 };
 
 async function refreshHistory() {
@@ -127,18 +153,19 @@ async function refreshHistory() {
     list.innerHTML = '';
     res.list.forEach((item) => {
       const div = document.createElement('div');
-      div.className = 'history-item';
+      div.className = 'list-item';
       const created = new Date(item.createdAt);
       const badgeClass = STATUS_CLASS[item.status] || 'active';
       const canDisable = item.status === '有効';
 
       div.innerHTML = `
         <div class="meta">
-          <strong>${item.recipientEmail}</strong> / ${item.fileName}<br>
+          <strong>${item.recipientEmail}</strong><br>
+          ${item.fileName}<br>
           ${created.toLocaleString('ja-JP')} ・ DL ${item.downloadCount}/${item.maxDownloads}
           <span class="status-badge ${badgeClass}">${item.status}</span>
         </div>
-        ${canDisable ? `<button data-id="${item.id}">無効化</button>` : ''}
+        ${canDisable ? `<div class="actions"><button data-id="${item.id}">無効化</button></div>` : ''}
       `;
       const disableBtn = div.querySelector('button');
       if (disableBtn) {
