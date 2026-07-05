@@ -2,15 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>ファイル送信(管理者用)</title>
+<title>受け渡し票 発行 | ファイル送信管理</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<div class="wrap">
 
 <div class="card" id="loginCard">
-  <h1>管理者ログイン</h1>
-  <p class="subtitle">Apps Scriptのスクリプトプロパティに設定したパスワードを入力してください</p>
+  <h1><span class="eyebrow">Secure Handover</span>管理者ログイン</h1>
+  <p class="subtitle">設定したパスワードを入力してください</p>
   <label for="adminPw">パスワード</label>
   <input type="password" id="adminPw">
   <button id="loginBtn">ログイン</button>
@@ -18,7 +19,7 @@
 </div>
 
 <div class="card" id="uploadCard" style="display:none;">
-  <h1>ファイルを送る</h1>
+  <h1><span class="eyebrow">New Handover</span>ファイルを送る</h1>
   <p class="subtitle">アップロードすると、リンク+ログインIDが即メール送信されます。パスワードは1分後に自動で別送されます。</p>
 
   <label for="file">送信するファイル</label>
@@ -26,6 +27,10 @@
 
   <label for="recipientEmail">受信者のメールアドレス</label>
   <input type="email" id="recipientEmail">
+
+  <label for="customId">リンクID(任意・空欄なら自動生成)</label>
+  <input type="text" id="customId" placeholder="例: yamada-0705">
+  <div class="field-hint">半角英数字・ハイフン・アンダースコアのみ、3〜64文字</div>
 
   <label for="maxDownloads">ダウンロード可能回数</label>
   <input type="number" id="maxDownloads" value="1" min="1">
@@ -54,10 +59,19 @@
 </div>
 
 <div class="card" id="pendingCard" style="display:none;">
-  <h1>送信待ち一覧</h1>
+  <div class="section-toggle">送信待ち一覧</div>
   <p class="subtitle">パスワード未送信の1分以内ならキャンセル可能です</p>
   <div id="pendingList"><div class="empty">読み込み中...</div></div>
-  <button id="refreshPendingBtn" type="button">更新</button>
+  <button class="secondary" id="refreshPendingBtn" type="button">更新</button>
+</div>
+
+<div class="card" id="historyCard" style="display:none;">
+  <div class="section-toggle">送信履歴</div>
+  <p class="subtitle">過去に発行したリンクの状態確認・無効化ができます</p>
+  <div id="historyList"><div class="empty">読み込み中...</div></div>
+  <button class="secondary" id="refreshHistoryBtn" type="button">更新</button>
+</div>
+
 </div>
 
 <script src="config.js"></script>
