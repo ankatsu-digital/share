@@ -15,8 +15,10 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       document.getElementById('loginCard').style.display = 'none';
       document.getElementById('uploadCard').style.display = 'block';
       document.getElementById('pendingCard').style.display = 'block';
+      document.getElementById('historyCard').style.display = 'block';
       loadDefaultTemplate();
       refreshPending();
+      refreshHistory();
     } else {
       showMsg(document.getElementById('loginMsg'), res.message || 'パスワードが違います', 'error');
     }
@@ -35,6 +37,7 @@ async function loadDefaultTemplate() {
 document.getElementById('uploadBtn').addEventListener('click', () => {
   const fileInput = document.getElementById('file');
   const recipientEmail = document.getElementById('recipientEmail').value.trim();
+  const customId = document.getElementById('customId').value.trim();
   const maxDownloads = document.getElementById('maxDownloads').value;
   const expiresInHours = document.getElementById('expiresInHours').value;
   const emailTemplate = document.getElementById('emailTemplate').value;
@@ -56,13 +59,14 @@ document.getElementById('uploadBtn').addEventListener('click', () => {
       const res = await callApi('uploadTransfer', {
         password: adminPassword,
         base64Data, fileName: file.name, recipientEmail,
-        emailTemplate, maxDownloads, expiresInHours
+        emailTemplate, maxDownloads, expiresInHours, customId
       });
       if (res.ok) {
         document.getElementById('shareLink').value = res.shareLink;
         document.getElementById('resultBox').style.display = 'block';
         showMsg(uploadMsg, '送信完了。相手にリンクのメールが届きます。', 'success');
         refreshPending();
+        refreshHistory();
       } else {
         showMsg(uploadMsg, res.message || 'アップロードに失敗しました', 'error');
       }
@@ -104,3 +108,53 @@ async function refreshPending() {
 }
 
 document.getElementById('refreshPendingBtn').addEventListener('click', refreshPending);
+
+const STATUS_CLASS = {
+  '有効': 'active',
+  '無効化済み': 'disabled',
+  'キャンセル済み': 'cancelled',
+  '期限切れ': 'expired',
+  'ダウンロード上限到達': 'expired'
+};
+
+async function refreshHistory() {
+  const list = document.getElementById('historyList');
+  try {
+    const res = await callApi('getHistory', { password: adminPassword });
+    if (!res.ok) { list.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    if (!res.list.length) { list.innerHTML = '<div class="empty">まだ送信履歴がありません</div>'; return; }
+
+    list.innerHTML = '';
+    res.list.forEach((item) => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      const created = new Date(item.createdAt);
+      const badgeClass = STATUS_CLASS[item.status] || 'active';
+      const canDisable = item.status === '有効';
+
+      div.innerHTML = `
+        <div class="meta">
+          <strong>${item.recipientEmail}</strong> / ${item.fileName}<br>
+          ${created.toLocaleString('ja-JP')} ・ DL ${item.downloadCount}/${item.maxDownloads}
+          <span class="status-badge ${badgeClass}">${item.status}</span>
+        </div>
+        ${canDisable ? `<button data-id="${item.id}">無効化</button>` : ''}
+      `;
+      const disableBtn = div.querySelector('button');
+      if (disableBtn) {
+        disableBtn.addEventListener('click', async (ev) => {
+          if (!confirm('このリンクを無効化しますか?元に戻せません。')) return;
+          ev.target.disabled = true;
+          const r = await callApi('disableTransfer', { id: item.id, password: adminPassword });
+          if (!r.ok) alert(r.message);
+          refreshHistory();
+        });
+      }
+      list.appendChild(div);
+    });
+  } catch (e) {
+    list.innerHTML = `<div class="empty">通信エラー: ${e.message}</div>`;
+  }
+}
+
+document.getElementById('refreshHistoryBtn').addEventListener('click', refreshHistory);
