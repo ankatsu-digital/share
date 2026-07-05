@@ -4,6 +4,15 @@ function showMsg(el, text, type) {
   el.innerHTML = `<div class="msg ${type}">${text}</div>`;
 }
 
+document.querySelectorAll('.tab-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
 document.getElementById('loginBtn').addEventListener('click', async () => {
   const pw = document.getElementById('adminPw').value;
   const btn = document.getElementById('loginBtn');
@@ -13,10 +22,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     if (res.ok) {
       adminPassword = pw;
       document.getElementById('loginCard').style.display = 'none';
-      document.getElementById('uploadCard').style.display = 'block';
-      document.getElementById('mailSettingsCard').style.display = 'block';
-      document.getElementById('pendingCard').style.display = 'block';
-      document.getElementById('historyCard').style.display = 'block';
+      document.getElementById('mainArea').style.display = 'block';
       loadDefaultTemplate();
       loadMailSettings();
       refreshPending();
