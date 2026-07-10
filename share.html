@@ -152,19 +152,27 @@ button.secondary:hover { background: #244f39; }
 
   <div class="info-box" id="infoBox"></div>
 
-  <div class="login-id-box">
-    <div class="eyebrow-label">Login ID</div>
-    <div class="value" id="loginIdDisplay">----</div>
+  <div id="idPasswordSection">
+    <div class="login-id-box">
+      <div class="eyebrow-label">Login ID</div>
+      <div class="value" id="loginIdDisplay">----</div>
+    </div>
+    <div class="status-text" id="statusText"></div>
+
+    <label for="inputLoginId">ログインID</label>
+    <input type="text" id="inputLoginId">
+
+    <label for="inputPassword">パスワード(メールで届きます)</label>
+    <input type="password" id="inputPassword">
+
+    <button id="verifyBtn"><span id="verifyBtnLabel">確認する</span></button>
   </div>
-  <div class="status-text" id="statusText"></div>
 
-  <label for="inputLoginId">ログインID</label>
-  <input type="text" id="inputLoginId">
+  <div id="linkOnlySection" style="display:none;">
+    <p class="subtitle" style="margin-bottom:0;">ID・パスワードは不要です。ボタンを押すとすぐにダウンロードできます。</p>
+    <button id="linkOnlyBtn"><span id="linkOnlyBtnLabel">ダウンロードの準備をする</span></button>
+  </div>
 
-  <label for="inputPassword">パスワード(メールで届きます)</label>
-  <input type="password" id="inputPassword">
-
-  <button id="verifyBtn"><span id="verifyBtnLabel">確認する</span></button>
   <div id="mainMsg"></div>
 </div>
 
