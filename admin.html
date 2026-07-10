@@ -95,6 +95,35 @@ button.secondary:hover { background: var(--paper); }
 .check-row input[type="checkbox"] { width: auto; margin: 0; }
 .check-row label { margin: 0; font-size: 13px; font-weight: 600; }
 
+/* 進捗バー */
+.progress-outer {
+  width: 100%; height: 8px; background: var(--paper); border-radius: 4px;
+  overflow: hidden; margin-top: 12px; border: 1px solid var(--line);
+}
+.progress-inner {
+  height: 100%; background: var(--accent); width: 0%;
+  transition: width 0.25s ease;
+}
+.progress-label {
+  font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center;
+}
+
+/* リクエスト承認フォーム */
+.request-controls {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; align-items: flex-end;
+}
+.request-controls > div { flex: 1; min-width: 120px; }
+.request-controls label { margin: 0 0 4px; font-size: 11.5px; }
+.request-controls select, .request-controls input {
+  margin: 0; padding: 8px 10px; font-size: 13px;
+}
+.request-controls .actions { display: flex; gap: 8px; margin-top: 0; width: 100%; }
+.request-controls .actions button { margin-top: 0; flex: 1; }
+.reason-badge {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px;
+  border-radius: 4px; margin-left: 4px; background: #fbf0ee; color: var(--error);
+}
+
 /* タブ */
 .tab-bar {
   display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
@@ -129,6 +158,7 @@ button.secondary:hover { background: var(--paper); }
     <button class="tab-btn active" data-tab="upload">新規送信</button>
     <button class="tab-btn" data-tab="mail">送信設定</button>
     <button class="tab-btn" data-tab="pending">送信待ち</button>
+    <button class="tab-btn" data-tab="requests">リクエスト</button>
     <button class="tab-btn" data-tab="history">履歴</button>
   </div>
 
@@ -200,6 +230,10 @@ button.secondary:hover { background: var(--paper); }
     </div>
 
     <button id="uploadBtn">アップロードして送信</button>
+    <div class="progress-outer" id="progressOuter" style="display:none;">
+      <div class="progress-inner" id="progressInner"></div>
+    </div>
+    <div class="progress-label" id="progressLabel" style="display:none;"></div>
     <div id="uploadMsg"></div>
 
     <div id="resultBox" style="display:none;">
@@ -224,6 +258,13 @@ button.secondary:hover { background: var(--paper); }
     <p class="subtitle">パスワード未送信の1分以内ならキャンセル可能です</p>
     <div id="pendingList"><div class="empty">読み込み中...</div></div>
     <button class="secondary" id="refreshPendingBtn" type="button">更新</button>
+  </div>
+
+  <div class="card tab-panel" id="tab-requests">
+    <div class="section-title">再有効化リクエスト</div>
+    <p class="subtitle">期限切れ・ダウンロード上限に達したリンクに、受信者から再送信の依頼が来ると表示されます</p>
+    <div id="requestsList"><div class="empty">読み込み中...</div></div>
+    <button class="secondary" id="refreshRequestsBtn" type="button">更新</button>
   </div>
 
   <div class="card tab-panel" id="tab-history">
