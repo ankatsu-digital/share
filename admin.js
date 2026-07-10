@@ -37,15 +37,38 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 
+let defaultTemplates = { id_password: { template: '', subject: '' }, link_only: { template: '', subject: '' } };
+let defaultPasswordEmail = { subject: '', body: '' };
+
 async function loadDefaultTemplate() {
   const res = await callApi('getDefaultTemplate', { password: adminPassword });
   if (res.ok) {
-    document.getElementById('emailTemplate').value = res.template;
-    if (res.subject && !document.getElementById('emailSubject').value) {
-      document.getElementById('emailSubject').value = res.subject;
-    }
+    defaultTemplates.id_password = { template: res.template, subject: res.subject };
+    defaultTemplates.link_only = { template: res.templateLinkOnly, subject: res.subjectLinkOnly };
+    defaultPasswordEmail = { subject: res.passwordEmailSubject, body: res.passwordEmailBody };
+    document.getElementById('passwordEmailSubject').value = defaultPasswordEmail.subject;
+    document.getElementById('passwordEmailBody').value = defaultPasswordEmail.body;
+    applyTemplateForMode(document.getElementById('authMode').value);
   }
 }
+
+function applyTemplateForMode(mode) {
+  const d = defaultTemplates[mode] || defaultTemplates.id_password;
+  document.getElementById('emailTemplate').value = d.template;
+  document.getElementById('emailSubject').value = d.subject;
+}
+
+document.getElementById('authMode').addEventListener('change', (ev) => {
+  const mode = ev.target.value;
+  const showIdPasswordExtras = mode !== 'link_only';
+  document.getElementById('customPasswordRow').style.display = showIdPasswordExtras ? 'block' : 'none';
+  document.getElementById('passwordEmailRow').style.display = showIdPasswordExtras ? 'block' : 'none';
+  applyTemplateForMode(mode);
+});
+
+document.getElementById('unlimitedDownloads').addEventListener('change', (ev) => {
+  document.getElementById('maxDownloads').disabled = ev.target.checked;
+});
 
 async function loadMailSettings() {
   const res = await callApi('getMailSettings', { password: adminPassword });
@@ -85,8 +108,12 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
   const recipientEmail = document.getElementById('recipientEmail').value.trim();
   const senderName = document.getElementById('senderName').value.trim();
   const customId = document.getElementById('customId').value.trim();
-  const customPassword = document.getElementById('customPassword').value.trim();
-  const maxDownloads = document.getElementById('maxDownloads').value;
+  const authMode = document.getElementById('authMode').value;
+  const customPassword = authMode === 'link_only' ? '' : document.getElementById('customPassword').value.trim();
+  const unlimitedDownloads = document.getElementById('unlimitedDownloads').checked;
+  const maxDownloads = unlimitedDownloads ? '' : document.getElementById('maxDownloads').value;
+  const passwordEmailSubject = authMode === 'link_only' ? '' : document.getElementById('passwordEmailSubject').value.trim();
+  const passwordEmailBody = authMode === 'link_only' ? '' : document.getElementById('passwordEmailBody').value;
   const expiresInHours = document.getElementById('expiresInHours').value;
   const emailSubject = document.getElementById('emailSubject').value.trim();
   const emailTemplate = document.getElementById('emailTemplate').value;
@@ -114,7 +141,8 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
       password: adminPassword,
       files, recipientEmail,
       emailTemplate, maxDownloads, expiresInHours, customId,
-      useAlias, emailSubject, customPassword, senderName
+      useAlias, emailSubject, customPassword, senderName, authMode,
+      passwordEmailSubject, passwordEmailBody
     });
     if (res.ok) {
       document.getElementById('shareLink').value = res.shareLink;
@@ -194,11 +222,14 @@ async function refreshHistory() {
       const badgeClass = STATUS_CLASS[item.status] || 'active';
       const canDisable = item.status === '有効';
 
+      const authModeLabel = item.authMode === 'link_only' ? 'リンクのみ' : 'ID・PW認証';
+      const maxDlLabel = item.maxDownloads === null ? '無制限' : item.maxDownloads;
+      const expiresLabel = item.expiresAt ? new Date(item.expiresAt).toLocaleString('ja-JP') : '無期限';
       div.innerHTML = `
         <div class="meta">
           <strong>${item.recipientEmail}</strong><br>
           ${item.fileName}<br>
-          ${created.toLocaleString('ja-JP')} ・ DL ${item.downloadCount}/${item.maxDownloads}
+          ${created.toLocaleString('ja-JP')} ・ DL ${item.downloadCount}/${maxDlLabel} ・ 期限: ${expiresLabel} ・ ${authModeLabel}
           <span class="status-badge ${badgeClass}">${item.status}</span>
         </div>
         ${canDisable ? `<div class="actions"><button data-id="${item.id}">無効化</button></div>` : ''}
