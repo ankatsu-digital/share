@@ -31,9 +31,7 @@ function renderInfoBox(data) {
   if (typeof data.fileCount === 'number') {
     rows.push(`<div class="row"><span class="k">ファイル数</span><span class="v">${data.fileCount}件</span></div>`);
   }
-  if (data.expiresAt) {
-    rows.push(`<div class="row"><span class="k">ダウンロード期限</span><span class="v">${fmtDateTime(data.expiresAt)}</span></div>`);
-  }
+  rows.push(`<div class="row"><span class="k">ダウンロード期限</span><span class="v">${data.expiresAt ? fmtDateTime(data.expiresAt) : '無期限'}</span></div>`);
   infoBox.innerHTML = rows.join('');
   document.getElementById('shareSubtitle').textContent = data.senderName
     ? `${data.senderName}さんからファイルが共有されています。`
@@ -65,10 +63,17 @@ async function loadStatus(isInitial) {
     }
 
     renderInfoBox(res);
-    document.getElementById('loginIdDisplay').textContent = res.loginId;
-    statusText.textContent = res.passwordSent
-      ? 'パスワードは送信済みです。メールをご確認ください。'
-      : 'パスワードは自動で送信される予定です(届くまで少しお待ちください)。';
+
+    if (res.authMode === 'link_only') {
+      document.getElementById('idPasswordSection').style.display = 'none';
+      document.getElementById('linkOnlySection').style.display = 'block';
+      if (statusPollTimer) clearInterval(statusPollTimer);
+    } else {
+      document.getElementById('loginIdDisplay').textContent = res.loginId;
+      statusText.textContent = res.passwordSent
+        ? 'パスワードは送信済みです。メールをご確認ください。'
+        : 'パスワードは自動で送信される予定です(届くまで少しお待ちください)。';
+    }
   } catch (e) {
     if (isInitial) {
       loadingText.textContent = '通信エラー: ' + e.message;
@@ -114,10 +119,45 @@ document.getElementById('verifyBtn').addEventListener('click', async () => {
   }
 });
 
+document.getElementById('linkOnlyBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('linkOnlyBtn');
+  const label = document.getElementById('linkOnlyBtnLabel');
+  btn.disabled = true;
+  label.innerHTML = '<span class="progress-inline"><span class="mini-spinner"></span>準備中...</span>';
+  mainMsg.innerHTML = '';
+
+  try {
+    const res = await callApi('verifyAndGetFile', { id: transferId, loginId: '', password: '' });
+    if (!res.ok) {
+      showMsg(mainMsg, res.message, 'error');
+      btn.disabled = false;
+      label.textContent = 'ダウンロードの準備をする';
+      return;
+    }
+
+    cachedLoginId = '';
+    cachedPassword = '';
+    cachedFiles = res.files || [];
+
+    if (statusPollTimer) clearInterval(statusPollTimer);
+
+    mainCard.style.display = 'none';
+    successCard.style.display = 'block';
+    renderSuccessScreen(res);
+  } catch (e) {
+    showMsg(mainMsg, '通信エラー: ' + e.message, 'error');
+    btn.disabled = false;
+    label.textContent = 'ダウンロードの準備をする';
+  }
+});
+
 function renderSuccessScreen(res) {
+  const remainingLabel = (res.remaining === null || typeof res.remaining === 'undefined')
+    ? '無制限'
+    : `${res.remaining}回`;
   document.getElementById('remainingText').textContent =
-    `残りダウンロード可能回数: ${res.remaining}回` +
-    (res.expiresAt ? ` ・ 期限: ${fmtDateTime(res.expiresAt)}` : '');
+    `残りダウンロード可能回数: ${remainingLabel}` +
+    ` ・ 期限: ${res.expiresAt ? fmtDateTime(res.expiresAt) : '無期限'}`;
 
   const fileList = document.getElementById('fileList');
   fileList.innerHTML = '';
