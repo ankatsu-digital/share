@@ -51,9 +51,10 @@ async function loadStatus(isInitial) {
   try {
     const res = await callApi('getLoginId', { id: transferId });
     if (!res.ok) {
-      loadingCard.querySelector('.loading-screen').innerHTML = `<p class="msg error" style="width:100%;">${res.message}</p>`;
-      mainCard.style.display = 'none';
       if (statusPollTimer) clearInterval(statusPollTimer);
+      loadingCard.style.display = 'none';
+      mainCard.style.display = 'none';
+      renderBlockedCard(res);
       return;
     }
 
@@ -79,6 +80,49 @@ async function loadStatus(isInitial) {
       loadingText.textContent = '通信エラー: ' + e.message;
     }
   }
+}
+
+function renderBlockedCard(res) {
+  document.getElementById('blockedCard').style.display = 'block';
+  document.getElementById('blockedMsg').textContent = res.message;
+  const area = document.getElementById('blockedRequestArea');
+
+  if (!res.canRequestReactivation) {
+    area.innerHTML = '';
+    return;
+  }
+
+  if (res.alreadyRequested) {
+    area.innerHTML = `<div class="msg info">再送信のリクエストは送信済みです。管理者の対応をお待ちください。</div>`;
+    return;
+  }
+
+  area.innerHTML = `
+    <p class="subtitle" style="margin-top:16px;">もう一度アクセスできるように、管理者にリクエストを送ることができます。</p>
+    <label for="reactivationMessage">管理者へのメッセージ(任意)</label>
+    <textarea id="reactivationMessage" rows="3" placeholder="例: もう一度ダウンロードさせてください"></textarea>
+    <button id="reactivationRequestBtn">再送信をリクエストする</button>
+    <div id="reactivationMsg"></div>
+  `;
+
+  document.getElementById('reactivationRequestBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('reactivationRequestBtn');
+    const msgEl = document.getElementById('reactivationMsg');
+    const message = document.getElementById('reactivationMessage').value.trim();
+    btn.disabled = true;
+    try {
+      const r = await callApi('requestReactivation', { id: transferId, message });
+      if (!r.ok) {
+        showMsg(msgEl, r.message, 'error');
+        btn.disabled = false;
+        return;
+      }
+      area.innerHTML = `<div class="msg success">リクエストを送信しました。管理者の対応をお待ちください。</div>`;
+    } catch (e) {
+      showMsg(msgEl, '通信エラー: ' + e.message, 'error');
+      btn.disabled = false;
+    }
+  });
 }
 
 loadStatus(true);
