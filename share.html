@@ -52,7 +52,12 @@ input[type="text"], input[type="password"] {
   border: 1px solid var(--line); border-radius: 6px; font-size: 14px;
   background: #fff; font-family: inherit; color: var(--ink);
 }
-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138,51,36,0.12); }
+textarea {
+  display: block; width: 100%; max-width: 100%; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 6px; font-size: 14px;
+  background: #fff; font-family: inherit; color: var(--ink); resize: vertical;
+}
+input:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(138,51,36,0.12); }
 button {
   display: block; margin-top: 20px; width: 100%; padding: 11px;
   background: var(--accent); color: #fff; border: none; border-radius: 6px;
@@ -144,6 +149,12 @@ button.secondary:hover { background: #244f39; }
     <div class="spinner"></div>
     <p id="loadingText">読み込み中...</p>
   </div>
+</div>
+
+<div class="card" id="blockedCard" style="display:none;">
+  <h1><span class="eyebrow">Secure Handover</span>ファイルの受け取り</h1>
+  <div class="msg error" id="blockedMsg"></div>
+  <div id="blockedRequestArea"></div>
 </div>
 
 <div class="card" id="mainCard" style="display:none;">
