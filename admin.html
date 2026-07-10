@@ -146,16 +146,29 @@ button.secondary:hover { background: var(--paper); }
     <label for="senderName">送信者名(相手の画面に表示されます・任意)</label>
     <input type="text" id="senderName" placeholder="例: 山田太郎">
 
+    <label for="authMode">認証方式</label>
+    <select id="authMode">
+      <option value="id_password" selected>ID・パスワード認証(1分後にパスワードを別送)</option>
+      <option value="link_only">リンクのみ(認証なし・すぐダウンロード可)</option>
+    </select>
+    <div class="field-hint">「リンクのみ」を選ぶと、ログインID・パスワードは発行されず、相手はリンクを開いてボタンを押すだけですぐダウンロードできます</div>
+
     <label for="customId">リンクID(任意・空欄なら自動生成)</label>
     <input type="text" id="customId" placeholder="例: yamada-0705">
     <div class="field-hint">半角英数字・ハイフン・アンダースコアのみ、3〜64文字</div>
 
-    <label for="customPassword">ログインパスワード(任意・空欄なら自動生成)</label>
-    <input type="text" id="customPassword" placeholder="空欄で自動生成">
-    <div class="field-hint">空白を含まない4〜64文字。指定しない場合はランダムなパスワードが自動生成され、1分後にメールで送られます</div>
+    <div id="customPasswordRow">
+      <label for="customPassword">ログインパスワード(任意・空欄なら自動生成)</label>
+      <input type="text" id="customPassword" placeholder="空欄で自動生成">
+      <div class="field-hint">空白を含まない4〜64文字。指定しない場合はランダムなパスワードが自動生成され、1分後にメールで送られます</div>
+    </div>
 
     <label for="maxDownloads">ダウンロード可能回数</label>
     <input type="number" id="maxDownloads" value="1" min="1">
+    <div class="check-row" style="margin-top:10px;">
+      <input type="checkbox" id="unlimitedDownloads">
+      <label for="unlimitedDownloads">回数制限なし(無制限)</label>
+    </div>
 
     <label for="expiresInHours">有効期限</label>
     <select id="expiresInHours">
@@ -164,6 +177,7 @@ button.secondary:hover { background: var(--paper); }
       <option value="72">3日間</option>
       <option value="168">7日間</option>
       <option value="720">30日間</option>
+      <option value="unlimited">無期限</option>
     </select>
 
     <label for="emailSubject">メール件名</label>
@@ -171,6 +185,14 @@ button.secondary:hover { background: var(--paper); }
 
     <label for="emailTemplate">送信するメール本文(編集可・{{LINK}} {{LOGIN_ID}} は自動で置き換わります)</label>
     <textarea id="emailTemplate" rows="8"></textarea>
+
+    <div id="passwordEmailRow">
+      <label for="passwordEmailSubject">パスワードメールの件名(任意・1分後に送るメール)</label>
+      <input type="text" id="passwordEmailSubject" placeholder="ファイル受け取り用パスワードのお知らせ">
+
+      <label for="passwordEmailBody">パスワードメールの本文(任意・{{LOGIN_ID}} {{PASSWORD}} が使えます)</label>
+      <textarea id="passwordEmailBody" rows="6"></textarea>
+    </div>
 
     <div class="check-row" id="aliasRow" style="display:none;">
       <input type="checkbox" id="useAlias">
