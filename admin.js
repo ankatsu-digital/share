@@ -27,6 +27,7 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       loadMailSettings();
       refreshPending();
       refreshHistory();
+      refreshRequests();
     } else {
       showMsg(document.getElementById('loginMsg'), res.message || 'パスワードが違います', 'error');
     }
@@ -103,6 +104,44 @@ document.getElementById('saveMailSettingsBtn').addEventListener('click', async (
   }
 });
 
+const UPLOAD_CONCURRENCY = 3;
+
+function setProgress(done, total) {
+  const outer = document.getElementById('progressOuter');
+  const inner = document.getElementById('progressInner');
+  const label = document.getElementById('progressLabel');
+  if (total <= 0) {
+    outer.style.display = 'none';
+    label.style.display = 'none';
+    return;
+  }
+  outer.style.display = 'block';
+  label.style.display = 'block';
+  const pct = Math.round((done / total) * 100);
+  inner.style.width = pct + '%';
+  label.textContent = `アップロード中... ${done}/${total}件完了(${pct}%)`;
+}
+
+// 並列数を制限しつつ、配列の各要素に対して非同期処理を実行する
+async function runWithConcurrency(items, concurrency, worker) {
+  let index = 0;
+  let hasError = null;
+  async function runNext() {
+    while (index < items.length && !hasError) {
+      const myIndex = index++;
+      try {
+        await worker(items[myIndex], myIndex);
+      } catch (e) {
+        hasError = e;
+      }
+    }
+  }
+  const runners = [];
+  for (let i = 0; i < Math.min(concurrency, items.length); i++) runners.push(runNext());
+  await Promise.all(runners);
+  if (hasError) throw hasError;
+}
+
 document.getElementById('uploadBtn').addEventListener('click', async () => {
   const fileInput = document.getElementById('file');
   const recipientEmail = document.getElementById('recipientEmail').value.trim();
@@ -125,38 +164,57 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
   if (!fileInput.files.length) { showMsg(uploadMsg, 'ファイルを選択してください', 'error'); return; }
   if (!recipientEmail) { showMsg(uploadMsg, '受信者のメールアドレスを入力してください', 'error'); return; }
 
+  const files = Array.from(fileInput.files);
   btn.disabled = true;
+  uploadMsg.innerHTML = '';
+  setProgress(0, files.length);
 
   try {
-    showMsg(uploadMsg, `ファイルを読み込んでいます...(${fileInput.files.length}件)`, 'info');
-    const files = [];
-    for (const f of fileInput.files) {
-      const base64Data = await readAsDataURL(f);
-      files.push({ fileName: f.name, base64Data });
-    }
-
-    showMsg(uploadMsg, 'アップロード中...(ファイルが大きいと時間がかかります)', 'info');
-
-    const res = await callApi('uploadTransfer', {
+    // ステップ1: 送信の枠を先に作る
+    const draftRes = await callApi('createTransferDraft', {
       password: adminPassword,
-      files, recipientEmail,
-      emailTemplate, maxDownloads, expiresInHours, customId,
+      recipientEmail, emailTemplate, maxDownloads, expiresInHours, customId,
       useAlias, emailSubject, customPassword, senderName, authMode,
       passwordEmailSubject, passwordEmailBody
     });
-    if (res.ok) {
-      document.getElementById('shareLink').value = res.shareLink;
-      document.getElementById('resultBox').style.display = 'block';
-      showMsg(uploadMsg, '送信完了。相手にリンクのメールが届きます。', 'success');
-      refreshPending();
-      refreshHistory();
-    } else {
-      showMsg(uploadMsg, res.message || 'アップロードに失敗しました', 'error');
+    if (!draftRes.ok) {
+      showMsg(uploadMsg, draftRes.message || '送信枠の作成に失敗しました', 'error');
+      setProgress(0, 0);
+      return;
     }
+    const transferId = draftRes.transferId;
+
+    // ステップ2: ファイルを並列で追加(完了ごとに進捗更新)
+    let doneCount = 0;
+    await runWithConcurrency(files, UPLOAD_CONCURRENCY, async (f) => {
+      const base64Data = await readAsDataURL(f);
+      const res = await callApi('addFileToTransfer', {
+        password: adminPassword,
+        transferId,
+        file: { fileName: f.name, base64Data }
+      });
+      if (!res.ok) throw new Error(res.message || `${f.name} のアップロードに失敗しました`);
+      doneCount++;
+      setProgress(doneCount, files.length);
+    });
+
+    // ステップ3: 確定(通知メール送信)
+    document.getElementById('progressLabel').textContent = '送信を確定しています...';
+    const finalRes = await callApi('finalizeTransfer', { password: adminPassword, transferId });
+    if (!finalRes.ok) {
+      showMsg(uploadMsg, finalRes.message || '確定処理に失敗しました', 'error');
+      return;
+    }
+    document.getElementById('shareLink').value = finalRes.shareLink;
+    document.getElementById('resultBox').style.display = 'block';
+    showMsg(uploadMsg, '送信完了。相手にリンクのメールが届きます。', 'success');
+    refreshPending();
+    refreshHistory();
   } catch (e) {
     showMsg(uploadMsg, 'エラー: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
+    setTimeout(() => setProgress(0, 0), 1500);
   }
 });
 
@@ -225,12 +283,13 @@ async function refreshHistory() {
       const authModeLabel = item.authMode === 'link_only' ? 'リンクのみ' : 'ID・PW認証';
       const maxDlLabel = item.maxDownloads === null ? '無制限' : item.maxDownloads;
       const expiresLabel = item.expiresAt ? new Date(item.expiresAt).toLocaleString('ja-JP') : '無期限';
+      const reqBadge = item.reactivationRequested ? '<span class="reason-badge">再有効化リクエスト有</span>' : '';
       div.innerHTML = `
         <div class="meta">
           <strong>${item.recipientEmail}</strong><br>
           ${item.fileName}<br>
           ${created.toLocaleString('ja-JP')} ・ DL ${item.downloadCount}/${maxDlLabel} ・ 期限: ${expiresLabel} ・ ${authModeLabel}
-          <span class="status-badge ${badgeClass}">${item.status}</span>
+          <span class="status-badge ${badgeClass}">${item.status}</span>${reqBadge}
         </div>
         ${canDisable ? `<div class="actions"><button data-id="${item.id}">無効化</button></div>` : ''}
       `;
@@ -252,3 +311,82 @@ async function refreshHistory() {
 }
 
 document.getElementById('refreshHistoryBtn').addEventListener('click', refreshHistory);
+
+const REASON_LABEL = { expired: '期限切れ', max_downloads: 'ダウンロード上限到達' };
+
+async function refreshRequests() {
+  const list = document.getElementById('requestsList');
+  try {
+    const res = await callApi('getReactivationRequests', { password: adminPassword });
+    if (!res.ok) { list.innerHTML = `<div class="empty">${res.message}</div>`; return; }
+    if (!res.list.length) { list.innerHTML = '<div class="empty">現在、リクエストはありません</div>'; return; }
+
+    list.innerHTML = '';
+    res.list.forEach((item) => {
+      const div = document.createElement('div');
+      div.className = 'list-item';
+      const requestedAt = new Date(item.requestedAt);
+      const reasonLabel = REASON_LABEL[item.reason] || item.reason;
+      const currentExpiresLabel = item.currentExpiresAt ? new Date(item.currentExpiresAt).toLocaleString('ja-JP') : '無期限';
+      const currentMaxLabel = item.currentMaxDownloads === null ? '無制限' : `${item.currentDownloadCount}/${item.currentMaxDownloads}`;
+
+      div.innerHTML = `
+        <div class="meta">
+          <strong>${item.recipientEmail}</strong> <span class="reason-badge">${reasonLabel}</span><br>
+          ${item.fileName}<br>
+          リクエスト日時: ${requestedAt.toLocaleString('ja-JP')}<br>
+          現在の期限: ${currentExpiresLabel} ・ 現在のDL: ${currentMaxLabel}
+          ${item.message ? `<br>メッセージ: ${item.message}` : ''}
+        </div>
+        <div class="request-controls">
+          <div>
+            <label>新しい有効期限</label>
+            <select class="reqExpires">
+              <option value="">変更しない</option>
+              <option value="1">1時間後まで延長</option>
+              <option value="24" selected>24時間後まで延長</option>
+              <option value="72">3日後まで延長</option>
+              <option value="168">7日後まで延長</option>
+              <option value="unlimited">無期限にする</option>
+            </select>
+          </div>
+          <div>
+            <label>ダウンロード回数を追加</label>
+            <input type="number" class="reqAddDl" value="1" min="0">
+          </div>
+          <div class="actions">
+            <button class="approveBtn" style="background:var(--success);">有効化する</button>
+            <button class="rejectBtn">却下する</button>
+          </div>
+        </div>
+      `;
+
+      div.querySelector('.approveBtn').addEventListener('click', async (ev) => {
+        ev.target.disabled = true;
+        const newExpiresInHours = div.querySelector('.reqExpires').value;
+        const addDownloads = div.querySelector('.reqAddDl').value;
+        const r = await callApi('approveReactivation', {
+          password: adminPassword, id: item.id, newExpiresInHours, addDownloads
+        });
+        if (!r.ok) { alert(r.message); ev.target.disabled = false; return; }
+        refreshRequests();
+        refreshHistory();
+      });
+
+      div.querySelector('.rejectBtn').addEventListener('click', async (ev) => {
+        if (!confirm('このリクエストを却下しますか?')) return;
+        ev.target.disabled = true;
+        const r = await callApi('rejectReactivation', { password: adminPassword, id: item.id });
+        if (!r.ok) { alert(r.message); ev.target.disabled = false; return; }
+        refreshRequests();
+        refreshHistory();
+      });
+
+      list.appendChild(div);
+    });
+  } catch (e) {
+    list.innerHTML = `<div class="empty">通信エラー: ${e.message}</div>`;
+  }
+}
+
+document.getElementById('refreshRequestsBtn').addEventListener('click', refreshRequests);
