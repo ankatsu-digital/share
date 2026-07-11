@@ -124,6 +124,24 @@ button.secondary:hover { background: var(--paper); }
   border-radius: 4px; margin-left: 4px; background: #fbf0ee; color: var(--error);
 }
 
+/* 選択ファイルのプレビュー */
+.file-preview-list {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
+}
+.file-preview-item {
+  width: 72px; text-align: center; font-size: 10.5px; color: var(--muted);
+}
+.file-preview-thumb {
+  width: 72px; height: 72px; border-radius: 6px; border: 1px solid var(--line);
+  object-fit: cover; display: block; background: var(--paper);
+}
+.file-preview-thumb.generic {
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+}
+.file-preview-name {
+  margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 /* タブ */
 .tab-bar {
   display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px;
@@ -169,6 +187,7 @@ button.secondary:hover { background: var(--paper); }
     <label for="file">送信するファイル(複数選択可)</label>
     <input type="file" id="file" multiple>
     <div class="field-hint">複数選んだ場合、ZIPにはまとめず個別に保存します。相手はそれぞれのファイルを個別に、またはまとめてダウンロードできます</div>
+    <div class="file-preview-list" id="filePreviewList"></div>
 
     <label for="recipientEmail">受信者のメールアドレス</label>
     <input type="email" id="recipientEmail">
