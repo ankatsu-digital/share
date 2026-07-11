@@ -104,6 +104,33 @@ document.getElementById('saveMailSettingsBtn').addEventListener('click', async (
   }
 });
 
+document.getElementById('file').addEventListener('change', (ev) => {
+  const list = document.getElementById('filePreviewList');
+  list.innerHTML = '';
+  Array.from(ev.target.files).forEach((f) => {
+    const item = document.createElement('div');
+    item.className = 'file-preview-item';
+    if (f.type && f.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.className = 'file-preview-thumb';
+      img.src = URL.createObjectURL(f);
+      img.onload = () => URL.revokeObjectURL(img.src);
+      item.appendChild(img);
+    } else {
+      const box = document.createElement('div');
+      box.className = 'file-preview-thumb generic';
+      box.textContent = '📄';
+      item.appendChild(box);
+    }
+    const name = document.createElement('div');
+    name.className = 'file-preview-name';
+    name.textContent = f.name;
+    name.title = f.name;
+    item.appendChild(name);
+    list.appendChild(item);
+  });
+});
+
 const UPLOAD_CONCURRENCY = 3;
 
 function setProgress(done, total) {
@@ -208,6 +235,8 @@ document.getElementById('uploadBtn').addEventListener('click', async () => {
     document.getElementById('shareLink').value = finalRes.shareLink;
     document.getElementById('resultBox').style.display = 'block';
     showMsg(uploadMsg, '送信完了。相手にリンクのメールが届きます。', 'success');
+    fileInput.value = '';
+    document.getElementById('filePreviewList').innerHTML = '';
     refreshPending();
     refreshHistory();
   } catch (e) {
