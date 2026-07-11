@@ -208,11 +208,37 @@ function renderSuccessScreen(res) {
   cachedFiles.forEach((f, idx) => {
     const div = document.createElement('div');
     div.className = 'file-item';
-    div.innerHTML = `<span class="name">${escapeHtml(f.fileName)}</span>`;
+
+    const left = document.createElement('div');
+    left.className = 'left';
+
+    const isImage = f.mimeType && f.mimeType.startsWith('image/');
+    if (isImage) {
+      const dataUri = `data:${f.mimeType};base64,${f.base64}`;
+      const thumb = document.createElement('img');
+      thumb.className = 'file-thumb';
+      thumb.src = dataUri;
+      thumb.addEventListener('click', () => openLightbox(dataUri));
+      left.appendChild(thumb);
+    } else {
+      const generic = document.createElement('div');
+      generic.className = 'file-thumb-generic';
+      generic.textContent = '📄';
+      left.appendChild(generic);
+    }
+
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = f.fileName;
+    left.appendChild(name);
+
+    div.appendChild(left);
+
     const btn = document.createElement('button');
     btn.textContent = 'ダウンロード';
     btn.addEventListener('click', () => downloadSingle(idx));
     div.appendChild(btn);
+
     fileList.appendChild(div);
   });
 
@@ -224,6 +250,19 @@ function renderSuccessScreen(res) {
     allBtn.style.display = 'none';
   }
 }
+
+function openLightbox(dataUri) {
+  document.getElementById('lightboxImg').src = dataUri;
+  document.getElementById('lightboxOverlay').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightboxOverlay').classList.remove('open');
+  document.getElementById('lightboxImg').src = '';
+}
+document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+document.getElementById('lightboxOverlay').addEventListener('click', (ev) => {
+  if (ev.target.id === 'lightboxOverlay') closeLightbox();
+});
 
 async function ensureConsumed() {
   if (hasConsumedDownload) return true;
